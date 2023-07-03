@@ -1,0 +1,97 @@
+CLASS zcl_string_manipulation DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+    METHODS constructor
+      IMPORTING
+        !iv_html TYPE string .
+    METHODS get_text
+      RETURNING
+        VALUE(rv_html) TYPE string .
+    METHODS modify_closing_tag .
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+
+    DATA mv_html TYPE string .
+ENDCLASS.
+
+
+
+CLASS ZCL_STRING_MANIPULATION IMPLEMENTATION.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method ZCL_STRING_MANIPULATION->CONSTRUCTOR
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IV_HTML                        TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD constructor.
+
+    mv_html = iv_html.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method ZCL_STRING_MANIPULATION->GET_TEXT
+* +-------------------------------------------------------------------------------------------------+
+* | [<-()] RV_HTML                        TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_text.
+
+    rv_html = mv_html.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method ZCL_STRING_MANIPULATION->MODIFY_CLOSING_TAG
+* +-------------------------------------------------------------------------------------------------+
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD modify_closing_tag.
+
+    DATA tags TYPE STANDARD TABLE OF char01.
+    DATA position TYPE i VALUE 0.
+    DATA position_temp TYPE i.
+    DATA(lv_html) = mv_html.
+
+    WHILE position < strlen( lv_html ) - 1.
+      IF lv_html+position(1) = '<'.
+        position_temp = position + 2.
+        " Check whether it is a html tag like <x>
+        IF lv_html+position_temp(1) = '>'.
+          SUBTRACT 1 FROM position_temp.
+          IF lv_html+position_temp(1) = '/'.
+            " Closing tag => retrive last opening tab
+            IF tags IS INITIAL.
+              " there was no opening tag !
+              ADD 3 TO position.
+            ELSE.
+              DATA(tag) = tags[ lines( tags ) ].
+              REPLACE FIRST OCCURRENCE OF '</>'
+                      IN lv_html
+                      WITH |</| && tag && |>|.
+              DELETE tags INDEX lines( tags ).
+              ADD 4 TO position.
+            ENDIF.
+          ELSE.
+            " Opening tag => store it
+            APPEND lv_html+position_temp(1) TO tags.
+            ADD 3 TO position.
+          ENDIF.
+        ELSE.
+          " There was a '<' but no '>' 2 characters after so just move on.
+          ADD 1 TO position.
+        ENDIF.
+      ELSE.
+        ADD 1 TO position.
+      ENDIF.
+    ENDWHILE.
+
+    mv_html = lv_html.
+
+  ENDMETHOD.
+ENDCLASS.
